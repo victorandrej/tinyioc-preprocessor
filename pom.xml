@@ -6,7 +6,7 @@
 
     <groupId>io.github.victorandrej</groupId>
     <artifactId>tinyioc-preprocessor</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <url>https://github.com/victorandrej/tinyioc-preprocessor</url>
 
     <description>Processador de anotacoes do Tiny IOC</description>
