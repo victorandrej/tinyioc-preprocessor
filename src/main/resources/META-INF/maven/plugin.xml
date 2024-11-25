@@ -1,0 +1,15 @@
+<plugin>
+    <name>tinyioc-preprocessor</name>
+    <description>Processador de anotacoes do Tiny IOC</description>
+    <groupId>io.github.victorandrej</groupId>
+    <artifactId>tinyioc-preprocessor</artifactId>
+    <version>1.0.0</version>
+    <goals>
+        <goal>
+            <name>processor-runner</name>
+            <description>Executa um os Processors</description>
+            <implementation>io.github.victorandrej.tinyioc.processor.BeanProcessor</implementation>
+            <phase>compile</phase>
+        </goal>
+    </goals>
+</plugin>
