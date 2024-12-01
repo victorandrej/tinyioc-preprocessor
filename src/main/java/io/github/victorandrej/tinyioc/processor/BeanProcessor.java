@@ -1,5 +1,6 @@
 package io.github.victorandrej.tinyioc.processor;
 
+
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Component;
@@ -25,9 +26,16 @@ public class BeanProcessor extends AbstractMojo {
     @Parameter(defaultValue = "${project.build.directory}/generated-sources/java", required = true)
     private File generetedSourcer;
 
+    @Parameter()
+    private List<String> processors;
+
+    @Parameter(property = "skipProcessor", defaultValue = "false")
+    private boolean skipProcessor;
 
     @Override
     public void execute() throws MojoExecutionException {
+        if (skipProcessor)
+            return;
         if (!generetedSourcer.exists()) {
             generetedSourcer.mkdirs();
         }
@@ -35,6 +43,25 @@ public class BeanProcessor extends AbstractMojo {
         if (!classesDir.exists()) {
             throw new MojoExecutionException("O diretório de classes não foi encontrado: " + classesDir);
         }
+        executeProcessors(classesDir);
+
+    }
+
+    private void executeClass(Class<?> clazz, List<Class<?>> classes) throws Exception {
+        if (!Processor.class.equals(clazz) && Processor.class.isAssignableFrom(clazz)) {
+            try {
+
+                var c = clazz.getConstructor();
+                Processor p = (Processor) c.newInstance();
+                p.process(generetedSourcer, classes, getLog());
+            } catch (NoSuchMethodException ex) {
+                getLog().info(clazz + " Sem construtor padrao, ignorando-o");
+            }
+
+        }
+    }
+
+    private void executeProcessors(File classesDir) throws MojoExecutionException {
         try (URLClassLoader classLoader = new URLClassLoader(
                 new URL[]{classesDir.toURI().toURL()},
                 Thread.currentThread().getContextClassLoader()
@@ -42,24 +69,15 @@ public class BeanProcessor extends AbstractMojo {
             Thread.currentThread().setContextClassLoader(classLoader);
             List<Class<?>> allClasses = getAllClasses(classesDir, classLoader);
             var unmodifiabledAllClasses = Collections.unmodifiableList(allClasses);
-            for (Class<?> clazz : allClasses) {
-                if (!Processor.class.equals(clazz) && Processor.class.isAssignableFrom(clazz)) {
-                    try {
-
-                        var c = clazz.getConstructor();
-                        Processor p = (Processor) c.newInstance();
-                        p.process(generetedSourcer, unmodifiabledAllClasses,getLog());
-                    } catch (NoSuchMethodException ex) {
-                        getLog().info(clazz + " Sem construtor padrao, ignorando-o");
-                    }
-
-                }
+            for (var clazzName : processors) {
+                try {
+                    executeClass(Class.forName(clazzName), unmodifiabledAllClasses);
+                }catch (ClassNotFoundException e ){}
             }
         } catch (Exception e) {
             throw new MojoExecutionException("Erro ao processar classes", e);
         }
     }
-
 
     private List<Class<?>> getAllClasses(File classesDir, ClassLoader classLoader) throws ClassNotFoundException {
         List<Class<?>> classes = new ArrayList<>();

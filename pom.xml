@@ -6,7 +6,7 @@
 
     <groupId>io.github.victorandrej</groupId>
     <artifactId>tinyioc-preprocessor</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.3</version>
     <url>https://github.com/victorandrej/tinyioc-preprocessor</url>
 
     <description>Processador de anotacoes do Tiny IOC</description>
@@ -37,8 +37,14 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
     </properties>
     <dependencies>
+        <dependency>
+            <groupId>de.ruedigermoeller</groupId>
+            <artifactId>fst</artifactId>
+            <version>3.0.1</version>
+        </dependency>
         <dependency>
             <groupId>org.apache.maven.plugin-tools</groupId>
             <artifactId>maven-plugin-annotations</artifactId>
