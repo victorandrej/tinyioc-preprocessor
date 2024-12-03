@@ -70,12 +70,21 @@ public class BeanProcessor extends AbstractMojo {
             List<Class<?>> allClasses = getAllClasses(classesDir, classLoader);
             var unmodifiabledAllClasses = Collections.unmodifiableList(allClasses);
             for (var clazzName : processors) {
+                Class<?> clazz = null;
                 try {
-                    executeClass(Class.forName(clazzName), unmodifiabledAllClasses);
-                }catch (ClassNotFoundException e ){}
+                    clazz = Class.forName(clazzName, true, classLoader);
+                } catch (ClassNotFoundException e) {
+                }
+                try {
+                    executeClass(clazz, unmodifiabledAllClasses);
+                } catch (Throwable e) {
+                    throw new Exception("Erro ao executar o processor " + clazzName+" ERRO: "+ e );
+                }
+
+
             }
-        } catch (Exception e) {
-            throw new MojoExecutionException("Erro ao processar classes", e);
+        } catch (Throwable e) {
+            throw new MojoExecutionException("Erro ao processar  o bean: ", e);
         }
     }
 
