@@ -96,7 +96,7 @@ public class BeanProcessor extends AbstractMojo {
 
                 classes.add(classLoader.loadClass(className));
             } catch (NoClassDefFoundError e) {
-                getLog().warn("Não foi possível carregar a classe: " + className);
+                getLog().warn("Não foi possível carregar a classe: " + className + " motivo: " + e);
             }
         }
         return classes;
