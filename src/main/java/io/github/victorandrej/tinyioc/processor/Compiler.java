@@ -1,15 +1,20 @@
 package io.github.victorandrej.tinyioc.processor;
 
+
 import com.squareup.javapoet.TypeSpec;
+import io.github.victorandrej.tinyioc.processor.asm.JClass;
+import javassist.CtClass;
+
+
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
+
 
 public interface Compiler {
 
-    List<Class<?>> getSourceClasses();
+    List<JClass> getSourceClasses();
 
     void compile(String packageName, TypeSpec typeSpec);
 }

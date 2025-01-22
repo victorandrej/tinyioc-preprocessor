@@ -1,21 +1,29 @@
 package io.github.victorandrej.tinyioc.processor;
 
 
+
 import com.squareup.javapoet.JavaFile;
+import io.github.victorandrej.tinyioc.processor.asm.AsmReader;
+import io.github.victorandrej.tinyioc.processor.asm.JClass;
 import io.github.victorandrej.tinyioc.processor.compiler.JavaCompile;
-import io.github.victorandrej.tinyioc.processor.util.ClassUtil;
+
 import io.github.victorandrej.tinyioc.processor.util.FileUtil;
+import javassist.CtClass;
+
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.*;
 import org.apache.maven.project.MavenProject;
+import javassist.ClassPool;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLClassLoader;
+
 import java.nio.file.Path;
 import java.util.*;
+
 
 @Mojo(name = "processor-runner", defaultPhase = LifecyclePhase.COMPILE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
 public class BeanProcessor extends AbstractMojo {
@@ -35,6 +43,7 @@ public class BeanProcessor extends AbstractMojo {
 
     @Parameter(property = "skipProcessor", defaultValue = "false")
     private boolean skipProcessor;
+    ClassPool classPool = ClassPool.getDefault();
 
     @Override
     public void execute() throws MojoExecutionException {
@@ -58,12 +67,8 @@ public class BeanProcessor extends AbstractMojo {
                 clazz = Class.forName(clazzName, true, classLoader);
             } catch (ClassNotFoundException e) {
             }
-            try {
-                executeClass(clazz, compiler);
-            } catch (Throwable e) {
-                throw new Exception("Erro ao executar o processor " + clazzName + " ERRO: " + e);
-            }
 
+                executeClass(clazz, compiler);
 
         }
     }
@@ -82,20 +87,44 @@ public class BeanProcessor extends AbstractMojo {
         }
     }
 
-    private void executeProcessors(File classesDir) throws MojoExecutionException {
-        try (URLClassLoader classLoader = new URLClassLoader(
-                new URL[]{classesDir.toURI().toURL()},
-                Thread.currentThread().getContextClassLoader()
-        )) {
-            Thread.currentThread().setContextClassLoader(classLoader);
-            List<File> classesFile = FileUtil.listFiles(classesDir, (f) -> f.getName().endsWith(".class"));
+    private JClass createClass(File classFile) {
+        try {
 
-            CompilerImpl compiler = new CompilerImpl(ClassUtil.getAllClasses(classesFile, classesDir, classLoader, getLog()));
+          return AsmReader.read(classFile);
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
+    private void executeProcessors(File classesDir) throws MojoExecutionException {
+        try {
+            List<JClass> classes = new ArrayList();
+            List<URL> processorsUrl = new ArrayList<>();
+            FileUtil.listFiles(classesDir, (f) -> f.getName().endsWith(".class")).stream().forEach(file -> {
+
+                var clazz = this.createClass(file);
+                if (processors.contains(clazz.getName())) {
+                    try {
+                        processorsUrl.add(file.toURI().toURL());
+                    } catch (MalformedURLException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                classes.add(clazz);
+
+
+            });
+            var classLoader = new UrlClassLoader(processorsUrl.toArray(new URL[0]), Thread.currentThread().getContextClassLoader());
+            Thread.currentThread().setContextClassLoader(classLoader);
+            CompilerImpl compiler = new CompilerImpl(Collections.unmodifiableList(classes));
             executeClasses(compiler, classLoader);
             ;
             compileClasses(genereteJavaClasses(compiler));
 
         } catch (Throwable e) {
+            e.printStackTrace();
             throw new MojoExecutionException("Erro ao processar  o bean: ", e);
         }
     }
@@ -106,7 +135,7 @@ public class BeanProcessor extends AbstractMojo {
         dependencies.addAll(getAllDependecies(project));
         dependencies.add(classesDir);
 
-        new JavaCompile(sourcePaths, classesDir, dependencies, getLog()).compile();
+        new JavaCompile(sourcePaths, classesDir,generetedSource, dependencies, getLog()).compile();
 
 
     }

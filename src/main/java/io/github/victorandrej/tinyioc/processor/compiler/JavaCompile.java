@@ -10,6 +10,7 @@ import javax.tools.StandardJavaFileManager;
 import javax.tools.ToolProvider;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
@@ -21,10 +22,11 @@ public class JavaCompile {
     private final File outDir;
     private final Set<File> dependencies;
     private final Log log;
-
-    public JavaCompile(List<Path> sourcePaths, File outDir, Set<File> dependencies, Log log) {
+    private final File generatedSourceFolder;
+    public JavaCompile(List<Path> sourcePaths, File outDir,File generatedSourceFolder, Set<File> dependencies, Log log) {
         this.sourcePaths = sourcePaths;
         this.outDir = outDir;
+        this.generatedSourceFolder= generatedSourceFolder;
         this.dependencies = dependencies;
         this.log = log;
     }
@@ -37,8 +39,9 @@ public class JavaCompile {
 
         try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(null, null, null)) {
 
+            var sources = this.sourcePaths.stream().map(p->p.toFile()).toList();
             Iterable<? extends JavaFileObject> compilationUnits =
-                    fileManager.getJavaFileObjectsFromFiles(this.sourcePaths.stream().map(p->p.toFile()).toList());
+                    fileManager.getJavaFileObjectsFromFiles(sources);
 
 
             String classPath =  dependencies.stream().map(d->d.getAbsolutePath())
@@ -61,6 +64,8 @@ public class JavaCompile {
 
             boolean success = task.call();
             if (success) {
+                moverClasses(sources);
+
                 log.info("Compilação bem-sucedida das classes dos processadores");
             } else {
                throw  new  MojoExecutionException( "Errro ao compilar Classes dos processadores");
@@ -69,5 +74,22 @@ public class JavaCompile {
         }
 
 
+    }
+
+    private void moverClasses(List<File> sources) throws IOException {
+        for(var source : sources){
+            var sourcePath = Path.of(source.getAbsolutePath().replace(".java",".class"));
+            String path = sourcePath.toString().replace(generatedSourceFolder.getAbsolutePath()+  File.separator,"");
+
+            Path newPath = outDir.toPath().resolve(path);
+            var f =newPath.toFile();
+            if(f.exists())
+                continue;
+
+           var file = new File( f.getParent());
+           file.mkdirs();
+            Files.move(sourcePath,newPath);
+
+        }
     }
 }

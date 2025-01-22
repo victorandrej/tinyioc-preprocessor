@@ -6,7 +6,7 @@
 
     <groupId>io.github.victorandrej</groupId>
     <artifactId>tinyioc-preprocessor</artifactId>
-    <version>1.0.3</version>
+    <version>1.0.4</version>
     <url>https://github.com/victorandrej/tinyioc-preprocessor</url>
 
     <description>Processador de anotacoes do Tiny IOC</description>
@@ -41,11 +41,17 @@
     </properties>
     <dependencies>
         <dependency>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm</artifactId>
+            <version>9.5</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/com.squareup/javapoet -->
+        <dependency>
             <groupId>com.squareup</groupId>
             <artifactId>javapoet</artifactId>
             <version>1.13.0</version>
-            <scope>compile</scope>
         </dependency>
+
         <dependency>
             <groupId>de.ruedigermoeller</groupId>
             <artifactId>fst</artifactId>
@@ -62,6 +68,7 @@
             <artifactId>maven-core</artifactId>
             <version>3.9.4</version>
         </dependency>
+
     </dependencies>
     <build>
         <plugins>
